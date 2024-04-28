@@ -10,7 +10,7 @@
         </div>
   
         <div class="px-6 flex">
-          <div class="bg-zinc-100 p-1 rounded-full"></div>
+          <div class="bg-blue-100 p-1 rounded-full"></div>
           <div>
             <template v-if="comments.some(comment => comment.postId === post.id)">
               <div v-for="comment in comments" :key="comment.id" class="p-2">
