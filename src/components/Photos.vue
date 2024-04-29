@@ -18,6 +18,14 @@ export default defineComponent({
             type: Array,
             required: true
         }
-    }
+    },
+    methods: {
+      FilterByphotosId(photosId) {
+        const photos = this.photos.find( users => users.id === photosId);
+        const albums = this.albums.find( users => users.id === albums[0].userId);
+        return albums + photos;
+      }
+    },
+
 });
 </script>

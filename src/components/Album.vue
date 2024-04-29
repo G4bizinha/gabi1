@@ -1,9 +1,9 @@
 <template>
     <div> 
         <h1>Album</h1>
-        <div v-for="albuns in albuns" :key="albuns.id">
-            <h2>{{albuns.title}}</h2>
-            <p>{{albuns.body}}</p>
+        <div v-for="albums in albums" :key="albums.id">
+            <h2>{{albums.title}}</h2>
+            <p>{{albums.body}}</p>
         </div>
     </div>
 </template>
@@ -13,11 +13,16 @@ import { defineComponent } from 'vue';
 
 export default defineComponent({
     props: {
-        albuns: {
+        albums: {
             type: Array,
             required: true
         }
-    }
+    },
+    methods: {
+      FilterByalbumsId(albumsId) {
+        return this.users.find( users => users.id === albumsId.userId);
+      }
+    },
 });
 </script>
 

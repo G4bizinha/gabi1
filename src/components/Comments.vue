@@ -1,9 +1,8 @@
 <template>
     <div> 
-        <h1>Comments</h1>
-        <div v-for="comments in comments" :key="comments.id">
-            <h2>{{comments.title}}</h2>
-            <p>{{comments.body}}</p>
+        <div>
+            <h2 class="font-bold">{{title}}</h2>
+            <p>{{body}}</p>
         </div>
     </div>
 </template>
@@ -14,8 +13,12 @@ import { defineComponent } from 'vue';
 
 export default defineComponent({
     props: {
-       comments: {
-            type: Array,
+       title: {
+            type: String,
+            required: true
+        },
+        body: {
+            type: String,
             required: true
         }
     }

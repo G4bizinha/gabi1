@@ -1,7 +1,17 @@
 <template>
   <div class="p-12">
     <h1 class="font-black text-2xl">Minha rede.com</h1>
-    <Posts :posts="postsData" :comments="commentsData"/>
+    <div>
+        <div>
+            <Posts 
+            :users="usersData" 
+            :posts="postsData" 
+            :comments="commentsData"
+            :photos="photosData"
+            :albums="albumsData"
+            />
+        </div>
+      </div>
   </div>
 </template>
 
@@ -9,10 +19,12 @@
 import { defineComponent } from 'vue';
 import Posts from '@/components/Posts.vue'; 
 import { getAllPosts, getAllComments, getAllAlbums, getAllPhotos, getAllUsers } from '@/services/Api';
+import CommentsCard from '@/components/Comments.vue';
 
 export default defineComponent({
     components: {
-        Posts
+        Posts,
+        CommentsCard,
     },
     data() {
         return {
@@ -46,7 +58,6 @@ export default defineComponent({
                 console.log(error);
             } 
         },
-
         async getAllAlbums() {
             try {
                 this.albumsData = await getAllAlbums();
@@ -54,7 +65,6 @@ export default defineComponent({
                 console.log(error);
             } 
         },
-
         async getAllPhotos() {
             try {
                 this.photosData = await getAllPhotos();
@@ -62,10 +72,10 @@ export default defineComponent({
                 console.log(error);
             } 
         },
-
         async getAllUsers() {
             try {
                 this.usersData = await getAllUsers();
+                console.log(this.usersData);
             } catch (error) {
                 console.log(error);
             } 
