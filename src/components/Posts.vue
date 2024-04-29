@@ -1,21 +1,26 @@
 <template>
   <div>
-    <div v-for="post in posts" :key="post.id" class="p-2">
-      <Users :name="getUserById(post.userId || 1).name" :photo="userPhoto(post.userId)" class="p-1" />
+    <div v-for="post in displayedPosts" :key="post.id" class="p-2">
+        <Users :name="getUserById(post.userId || 1).name" :photo="userPhoto(post.userId)" class="p-1" />
       <h2 class="text-2xl font-bold">{{ post.title }}</h2>
       <p class="font-mono">{{ post.body }}</p>
       <div class="flex py-2">
-        <CommentsIcon @click="toggleComments(post.id)" class="w-8 h-8 ml-4" />
+        <CommentsIcon @click="toggleComments(post.id)" class="w-8 h-8 ml-4 cursor-pointer" />
       </div>
 
       <div class="px-6 flex">
         <div class="bg-blue-200 p-1 rounded-full"></div>
         <div>
           <div v-for="comment in filterCommentsByPost(post)" :key="comment.id">
-            <Comments :title="comment.name" :body="comment.body" v-if="isCommentVisible(post.id)" class="p-1" />
+            <Comments :title="comment.name" :body="comment.body" v-if="isCommentVisible(post.id)" class="p-2" />
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="flex justify-center mt-4">
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow mr-2" @click="previousPage" :disabled="currentPage === 1">Anterior</button>
+      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow ml-2" @click="nextPage" :disabled="currentPage === totalPages">Próximo</button>
     </div>
   </div>
 </template>
@@ -30,7 +35,9 @@ export default defineComponent({
   data() {
     return {
       visibleComments: [],
-      userPhotos: {}, // Usaremos um objeto para armazenar as fotos de perfil por userId
+      userPhotos: {},
+      currentPage: 1,
+      postsPerPage: 5, // Número de posts por página
     };
   },
   props: {
@@ -60,7 +67,27 @@ export default defineComponent({
     CommentsIcon,
     Users,
   },
+  computed: {
+    totalPages() {
+      return Math.ceil(this.posts.length / this.postsPerPage);
+    },
+    displayedPosts() {
+      const startIndex = (this.currentPage - 1) * this.postsPerPage;
+      const endIndex = startIndex + this.postsPerPage;
+      return this.posts.slice(startIndex, endIndex);
+    },
+  },
   methods: {
+    nextPage() {
+      if (this.currentPage < this.totalPages) {
+        this.currentPage++;
+      }
+    },
+    previousPage() {
+      if (this.currentPage > 1) {
+        this.currentPage--;
+      }
+    },
     filterCommentsByPost(post) {
       return this.comments.filter(comment => comment.postId === post.id);
     },
@@ -79,26 +106,34 @@ export default defineComponent({
       return this.visibleComments.includes(postId);
     },
     async fetchUserPhotos() {
-      // Iterar sobre os usuários para obter as fotos de perfil
       for (const user of this.users) {
-        // Encontre o álbum do usuário
         const userAlbum = this.albums.find(album => album.userId === user.id);
         if (userAlbum) {
-          // Encontre a primeira foto do álbum
           const firstPhoto = this.photos.find(photo => photo.albumId === userAlbum.id);
           if (firstPhoto) {
-            // Use a URL da primeira foto como foto de perfil e armazene no objeto userPhotos
-            this.userPhotos[user.id] = firstPhoto.url;
+            try {
+              this.userPhotos[user.id] = await this.loadImage(firstPhoto.url);
+            } catch (error) {
+              console.error("Erro ao carregar imagem:", error);
+            }
           }
         }
       }
     },
+    loadImage(url) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(url);
+        img.onerror = reject;
+        img.src = url;
+      });
+    },
     userPhoto(userId) {
-      return this.userPhotos[userId]; 
+      return this.userPhotos[userId] || ''; // Retorna uma string vazia se a imagem ainda não estiver carregada
     },
   },
-  mounted() {
-    this.fetchUserPhotos();
+  async mounted() {
+    await this.fetchUserPhotos();
   },
 });
 </script>
