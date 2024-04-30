@@ -1,26 +1,45 @@
 <template>
-  <div>
-    <div v-for="post in displayedPosts" :key="post.id" class="p-2">
-        <Users :name="getUserById(post.userId || 1).name" :photo="userPhoto(post.userId)" class="p-1" />
-      <h2 class="text-2xl font-bold">{{ post.title }}</h2>
-      <p class="font-mono">{{ post.body }}</p>
-      <div class="flex py-2">
-        <CommentsIcon @click="toggleComments(post.id)" class="w-8 h-8 ml-4 cursor-pointer" />
+  <div class="px-2">
+    <div v-if="currentPost" class="p-2 flex">
+      <div>
+        <div class="flex-none">
+          
+          <Album :album="getFilteredAlbum(currentPost.userId, currentPost.id)" class="p-1"/>
+        </div>
       </div>
-
-      <div class="px-6 flex">
-        <div class="bg-blue-200 p-1 rounded-full"></div>
-        <div>
-          <div v-for="comment in filterCommentsByPost(post)" :key="comment.id">
-            <Comments :title="comment.name" :body="comment.body" v-if="isCommentVisible(post.id)" class="p-2" />
+      <!-- Comentários -->
+      <div class="w-6/12 px-6 flex flex-col flex-grow">
+        <div class="flex-grow overflow-y-auto">
+          <div class="flex-grow pl-2 py-1">
+            <Users :user="getUserById(currentPost.userId)" :photo="userPhoto(currentPost.userId)" class="p-1" />
+            <div class="bg-gray-100 p-2 rounded-lg mt-2">
+              <h2 class="text-2xl font-bold">{{ currentPost.title }}</h2>
+            <p class="font-mono">{{ currentPost.body }}</p>
+            <div class="flex mt-2">
+              <div class="flex py-2">
+                <CommentsIcon @click="toggleComments(currentPost.id)" class="w-8 h-8 ml-4" />
+              </div>
+            </div>
+            </div>
+          </div>
+          <div v-for="comment in filterCommentsByPost(currentPost)" :key="comment.id">
+            <Comments :title="comment.name" :body="comment.body" :email="comment.email" v-if="isCommentVisible(currentPost.id)" class="p-1" />
           </div>
         </div>
       </div>
     </div>
-
     <div class="flex justify-center mt-4">
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow mr-2" @click="previousPage" :disabled="currentPage === 1">Anterior</button>
-      <button class="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 border border-gray-400 rounded shadow ml-2" @click="nextPage" :disabled="currentPage === totalPages">Próximo</button>
+      <button @click="previousPost" class="focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+      <span class="mx-4">{{ currentIndex + 1 }} / {{ posts.length }}</span>
+      <button @click="nextPost" class="focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
@@ -29,6 +48,7 @@
 import CommentsIcon from "@/assets/Comments.vue";
 import Comments from "@/components/Comments.vue";
 import Users from "@/components/Users.vue";
+import Album from "@/components/Album.vue";
 import { defineComponent } from "vue";
 
 export default defineComponent({
@@ -36,8 +56,7 @@ export default defineComponent({
     return {
       visibleComments: [],
       userPhotos: {},
-      currentPage: 1,
-      postsPerPage: 5, // Número de posts por página
+      currentIndex: 0,
     };
   },
   props: {
@@ -66,27 +85,22 @@ export default defineComponent({
     Comments,
     CommentsIcon,
     Users,
+    Album,
   },
   computed: {
-    totalPages() {
-      return Math.ceil(this.posts.length / this.postsPerPage);
-    },
-    displayedPosts() {
-      const startIndex = (this.currentPage - 1) * this.postsPerPage;
-      const endIndex = startIndex + this.postsPerPage;
-      return this.posts.slice(startIndex, endIndex);
+    currentPost() {
+      return this.posts[this.currentIndex];
     },
   },
   methods: {
-    nextPage() {
-      if (this.currentPage < this.totalPages) {
-        this.currentPage++;
-      }
-    },
-    previousPage() {
-      if (this.currentPage > 1) {
-        this.currentPage--;
-      }
+    getFilteredAlbum(userId, postId) {
+      const userAlbums = this.albums.filter(album => album.userId === userId);
+      const postIndex = this.posts.findIndex(post => post.id === postId);
+      const albumIndex = postIndex % userAlbums.length;
+      if (userAlbums.length === 0) return {};
+      const selectedAlbum = userAlbums[albumIndex];
+      const albumPhotos = this.photos.filter(photo => photo.albumId === selectedAlbum.id);
+      return { album: selectedAlbum, photos: albumPhotos };
     },
     filterCommentsByPost(post) {
       return this.comments.filter(comment => comment.postId === post.id);
@@ -105,35 +119,36 @@ export default defineComponent({
     isCommentVisible(postId) {
       return this.visibleComments.includes(postId);
     },
+    previousPost() {
+      if (this.currentIndex > 0) {
+        this.currentIndex--;
+      }
+    },
+    nextPost() {
+      if (this.currentIndex < this.posts.length - 1) {
+        this.currentIndex++;
+      }
+    },
     async fetchUserPhotos() {
       for (const user of this.users) {
         const userAlbum = this.albums.find(album => album.userId === user.id);
         if (userAlbum) {
           const firstPhoto = this.photos.find(photo => photo.albumId === userAlbum.id);
           if (firstPhoto) {
-            try {
-              this.userPhotos[user.id] = await this.loadImage(firstPhoto.url);
-            } catch (error) {
-              console.error("Erro ao carregar imagem:", error);
-            }
+            this.userPhotos[user.id] = firstPhoto.url;
           }
         }
       }
     },
-    loadImage(url) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => resolve(url);
-        img.onerror = reject;
-        img.src = url;
-      });
-    },
     userPhoto(userId) {
-      return this.userPhotos[userId] || ''; // Retorna uma string vazia se a imagem ainda não estiver carregada
+      return this.userPhotos[userId];
     },
   },
-  async mounted() {
-    await this.fetchUserPhotos();
+  mounted() {
+    this.fetchUserPhotos();
+    setTimeout(() => {
+      this.fetchUserPhotos();
+    }, 500);
   },
 });
 </script>

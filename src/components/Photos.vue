@@ -1,10 +1,8 @@
 <template>
     <div> 
-        <h1>Photos</h1>
-        <div v-for="photos in photos" :key="photos.id">
-            <h2>{{photos.title}}</h2>
-            <p>{{photos.body}}</p>
-        </div>
+        <img :src="photos.url"/>
+        <h2>{{photos.title}}</h2>
+        <h2 style="font-size:14px ;"  class="font-bold">{{ photos.thumbnailUrl}} </h2>    
     </div>
 </template>
 
